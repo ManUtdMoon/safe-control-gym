@@ -7,7 +7,7 @@ quadrotor_config:
   physics: pyb
   quad_type: 2
   init_state:
-    init_x: 0
+    init_x: 1
     init_x_dot: 0
     init_z: 1
     init_z_dot: 0

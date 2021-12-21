@@ -31,13 +31,13 @@ def main():
     # Set iterations and episode counter.
     num_episodes = 1
     ITERATIONS = int(config.quadrotor_config['episode_len_sec']*config.quadrotor_config['ctrl_freq'])
-    for i in range(3):
+    for i in range(num_episodes):
         # Start a timer.
         START = time.time()
-        if i == 1:
-            config.quadrotor_config['task_info']['trajectory_type'] = 'circle'
-        elif i == 2:
-            config.quadrotor_config['task_info']['trajectory_type'] = 'square'
+        # if i == 1:
+        #     config.quadrotor_config['task_info']['trajectory_type'] = 'circle'
+        # elif i == 2:
+        #     config.quadrotor_config['task_info']['trajectory_type'] = 'square'
         env = make('quadrotor', **config.quadrotor_config)
         # Create controller.
         action = np.zeros(2)
@@ -80,6 +80,7 @@ def main():
                                                )
             action = ctrl.KF * action**2
             action = np.array([action[0]+action[3], action[1]+action[2]])
+            # env.render()
             if done:
                 _, _ = env.reset()
         # Close the environment and print timing statistics.

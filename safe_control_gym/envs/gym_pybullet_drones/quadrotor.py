@@ -487,7 +487,7 @@ class Quadrotor(BaseAviary):
 
         """
         self.x_threshold = 2
-        self.z_threshold = 2
+        self.z_threshold = 3
         self.theta_threshold_radians = 85 * math.pi / 180
         # Define obs/state bounds, labels and units.
         if self.QUAD_TYPE == QuadType.ONE_D:
