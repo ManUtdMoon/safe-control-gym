@@ -51,12 +51,21 @@ def main():
                                lineColorRGB=[1, 0, 0],
                                # lifeTime=2 * env._CTRL_TIMESTEP,
                                physicsClientId=env.PYB_CLIENT)
+        x_list = []
+        z_list = []
+        x_list.append(initial_obs[0])
+        z_list.append(initial_obs[2])
+        rew_list = []
+        mse_list = []
+        violation_list = []
         # Run the experiment.
         for i in range(ITERATIONS):
             # Step the environment and print all returned information.
             obs, reward, done, info = env.step(action)
             # Print the last action and the information returned at each step.
             print(i, '-th step.')
+            x_list.append(obs[0])
+            z_list.append(obs[2])
             print(action, '\n', obs, '\n', reward, '\n', done, '\n', info, '\n')
             # Compute the next action.
             action, _, _ = ctrl.computeControl(control_timestep=env.CTRL_TIMESTEP,
@@ -80,11 +89,18 @@ def main():
                                                )
             action = ctrl.KF * action**2
             action = np.array([action[0]+action[3], action[1]+action[2]])
+            rew_list.append(reward)
+            violation_list.append(info.get('constraint_violation', 0.))
+            mse_list.append(info.get('mse', 0.))
             # env.render()
             if done:
                 _, _ = env.reset()
         # Close the environment and print timing statistics.
         env.close()
+        print('return:', sum(rew_list), '\n',
+              'avg_violation:', sum(violation_list)/len(violation_list), '\n',
+              'avg_mse', sum(mse_list)/len(mse_list), '\n')
+
         elapsed_sec = time.time() - START
         print("\n{:d} iterations (@{:d}Hz) and {:d} episodes in {:.2f} seconds, i.e. {:.2f} steps/sec for a {:.2f}x speedup.\n"
               .format(ITERATIONS, env.CTRL_FREQ, num_episodes, elapsed_sec, ITERATIONS/elapsed_sec, (ITERATIONS*env.CTRL_TIMESTEP)/elapsed_sec))
