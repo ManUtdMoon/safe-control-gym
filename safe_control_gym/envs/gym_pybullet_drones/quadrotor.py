@@ -105,10 +105,14 @@ class Quadrotor(BaseAviary):
                  norm_act_scale=0.1,
                  obs_goal_horizon=1,
                  rew_state_weight=1.0,
+                 rew_state_scale=[10,10,1,1,0.2,0.2],
                  rew_act_weight=0.0001,
                  rew_exponential=True,
                  done_on_out_of_bound=True,
                  info_mse_metric_state_weight=[1,0,1,0,0,0],
+                 info_speed_error_metric_state_weight=[0,1,0,1,0,0],
+                 info_angle_error_metric_state_weight=[0,0,0,0,1,0],
+                 info_omega_error_metric_state_weight=[0,0,0,0,0,1],
                  **kwargs
                  ):
         """Initialize a quadrotor environment.
@@ -131,10 +135,14 @@ class Quadrotor(BaseAviary):
         self.norm_act_scale = norm_act_scale
         self.obs_goal_horizon = obs_goal_horizon
         self.rew_state_weight = np.array(rew_state_weight, ndmin=1, dtype=float)
+        self.rew_state_scale = np.array(rew_state_scale, ndmin=1, dtype=float)
         self.rew_act_weight = np.array(rew_act_weight, ndmin=1, dtype=float)
         self.rew_exponential = rew_exponential
         self.done_on_out_of_bound = done_on_out_of_bound
         self.info_mse_metric_state_weight = np.array(info_mse_metric_state_weight, ndmin=1, dtype=float)
+        self.info_speed_error_metric_state_weight = np.array(info_speed_error_metric_state_weight, ndmin=1, dtype=float)
+        self.info_angle_error_metric_state_weight = np.array(info_angle_error_metric_state_weight, ndmin=1, dtype=float)
+        self.info_omega_error_metric_state_weight = np.array(info_omega_error_metric_state_weight, ndmin=1, dtype=float)
         # BaseAviary constructor, called after defining the custom args, 
         # since some BenchmarkEnv init setup can be task(custom args)-dependent. 
         super().__init__(init_state=init_state, inertial_prop=inertial_prop, **kwargs)
@@ -620,7 +628,7 @@ class Quadrotor(BaseAviary):
             if self.TASK == Task.TRAJ_TRACKING:
                 wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
                 state_error = state - self.X_GOAL[wp_idx]
-                dist = np.sum(self.rew_state_weight * state_error * state_error)
+                dist = np.sum(self.rew_state_weight * self.rew_state_scale * state_error * state_error)
                 dist += np.sum(self.rew_act_weight * act * act)
             rew = -dist
             # convert rew to be positive and bounded [0,1]
@@ -703,8 +711,14 @@ class Quadrotor(BaseAviary):
             wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
             state_error = state - self.X_GOAL[wp_idx]
         # filter only relevant dimensions 
-        state_error = state_error * self.info_mse_metric_state_weight
-        info["mse"] = np.sum(state_error ** 2)
+        lacation_error = state_error * self.info_mse_metric_state_weight
+        speed_error = state_error * self.info_speed_error_metric_state_weight
+        angle_error = state_error * self.info_angle_error_metric_state_weight
+        omega_error = state_error * self.info_omega_error_metric_state_weight
+        info["mse"] = np.sum(lacation_error ** 2)
+        info["mse_speed"] = np.sum(speed_error ** 2)
+        info["mse_angle"] = np.sum(angle_error ** 2)
+        info["mse_angle_speed"] = np.sum(omega_error ** 2)
         # if self.constraints is not None:
         #     info["constraint_values"] = self.constraints.get_values(self)
         #     info["constraint_violations"] = self.constraints.get_violations(self)
