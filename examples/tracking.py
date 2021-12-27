@@ -51,12 +51,16 @@ def main():
                                lineColorRGB=[1, 0, 0],
                                # lifeTime=2 * env._CTRL_TIMESTEP,
                                physicsClientId=env.PYB_CLIENT)
-        x_list = []
-        z_list = []
+        position_list = []
         rew_list = []
-        x_list.append(initial_obs[0])
-        z_list.append(initial_obs[2])
+        ref_list = []
+        position_list.append((initial_obs[0], initial_obs[2]))
+        ref_list.append((initial_info['x_reference'][(env.start_index) % (env.X_GOAL.shape[0]), 0],
+                        initial_info['x_reference'][(env.start_index) % (env.X_GOAL.shape[0]), 2])
+                        )
+
         info_dict_of_list = {}
+        print(initial_obs[0], initial_obs[2])
 
         # Run the experiment.
         for i in range(ITERATIONS):
@@ -64,8 +68,7 @@ def main():
             obs, reward, done, info = env.step(action)
             # Print the last action and the information returned at each step.
             print(i, '-th step.')
-            x_list.append(obs[0])
-            z_list.append(obs[2])
+            position_list.append((obs[0], obs[2]))
             print(action, '\n', obs, '\n', reward, '\n', done, '\n', info, '\n')
             # Compute the next action.
             action, _, _ = ctrl.computeControl(control_timestep=env.CTRL_TIMESTEP,
@@ -77,19 +80,21 @@ def main():
                                                cur_vel=np.array([obs[1], 0, obs[3]]),
                                                cur_ang_vel=np.array([0, obs[4], 0]),
                                                target_pos=np.array([
-                                                                    initial_info['x_reference'][i-1,0],
+                                                                    initial_info['x_reference'][(i+env.start_index)%(env.X_GOAL.shape[0]),0],
                                                                     0,
-                                                                    initial_info['x_reference'][i-1,2]
+                                                                    initial_info['x_reference'][(i+env.start_index)%(env.X_GOAL.shape[0]),2]
                                                                     ]),
                                                target_vel=np.array([
-                                                                    initial_info['x_reference'][i-1,1],
+                                                                    initial_info['x_reference'][(i+env.start_index)%(env.X_GOAL.shape[0]),1],
                                                                     0,
-                                                                    initial_info['x_reference'][i-1,3]
+                                                                    initial_info['x_reference'][(i+env.start_index)%(env.X_GOAL.shape[0]),3]
                                                                     ])
                                                )
             action = ctrl.KF * action**2
             action = np.array([action[0]+action[3], action[1]+action[2]])
             rew_list.append(reward)
+            ref_list.append((initial_info['x_reference'][(i+env.start_index) % (env.X_GOAL.shape[0]), 0],
+                             initial_info['x_reference'][(i+env.start_index) % (env.X_GOAL.shape[0]), 2],))
             if i == 0:
                 for key in info.keys():
                     info_dict_of_list[key] = [info[key]]
@@ -109,6 +114,9 @@ def main():
         elapsed_sec = time.time() - START
         print("\n{:d} iterations (@{:d}Hz) and {:d} episodes in {:.2f} seconds, i.e. {:.2f} steps/sec for a {:.2f}x speedup.\n"
               .format(ITERATIONS, env.CTRL_FREQ, num_episodes, elapsed_sec, ITERATIONS/elapsed_sec, (ITERATIONS*env.CTRL_TIMESTEP)/elapsed_sec))
+
+        # np.save('./PID_traj.npy', np.array(position_list))
+        # np.save('./PID_ref.npy', np.array(ref_list))
 
 
 class DSLPIDControl():

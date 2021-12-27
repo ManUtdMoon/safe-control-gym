@@ -10,6 +10,7 @@ import casadi as cs
 from gym import spaces
 import numpy as np
 import pybullet as p
+import scipy
 
 from safe_control_gym.envs.benchmark_env import Cost, Task
 from safe_control_gym.envs.constraints import GENERAL_CONSTRAINTS
@@ -245,6 +246,9 @@ class Quadrotor(BaseAviary):
                     np.zeros(POS_REF.shape[0]),
                     np.zeros(VEL_REF.shape[0])
                 ]).transpose()
+                goal_position = np.vstack([POS_REF[:, 0], POS_REF[:, 2]]).transpose()
+                self.GOAL_TREE = scipy.spatial.cKDTree(goal_position)
+
 
     def reset(self):
         """(Re-)initializes the environment to start an episode.
@@ -304,8 +308,18 @@ class Quadrotor(BaseAviary):
                             physicsClientId=self.PYB_CLIENT)
         # Update BaseAviary internal variables before calling self._get_observation().
         self._update_and_store_kinematic_information()
+
+        # Get nearest point as the initial target waypoint
+        if self.QUAD_TYPE == QuadType.TWO_D:
+            full_state = self._get_drone_state_vector(0)
+            pos, _, rpy, vel, ang_v, _ = np.split(full_state, [3, 7, 10, 13, 16])
+            init_state = np.array([pos[0], pos[2]]).reshape((2,))  # {x, z}.
+            _, index = self.GOAL_TREE.query(init_state, k=1)
+            self.start_index = index
+
         obs, info = self._get_observation(), self._get_reset_info()
         obs, info = super().after_reset(obs, info)
+
         # Return either an observation and dictionary or just the observation.
         if self.INFO_IN_RESET:
             return obs, info
@@ -595,11 +609,15 @@ class Quadrotor(BaseAviary):
         if self.COST == Cost.RL_REWARD and self.TASK == Task.TRAJ_TRACKING:            
             # increment by 1 since counter is post-updated after _get_observation(),
             # obs should contain goal state desired for the next state
-            next_step = self.ctrl_step_counter + 1 
+            next_step = self.ctrl_step_counter + 1 + self.start_index
             wp_idx = [
-                min(next_step + i, self.X_GOAL.shape[0]-1) 
+                (next_step + i) % self.X_GOAL.shape[0]
                 for i in range(self.obs_goal_horizon)
             ]
+            # wp_idx = [
+            #     min(next_step + i, self.X_GOAL.shape[0]-1)
+            #     for i in range(self.obs_goal_horizon)
+            # ]
             goal_state = self.X_GOAL[wp_idx].flatten()
             obs = np.concatenate([obs, goal_state])
         elif self.COST == Cost.RL_REWARD and self.TASK == Task.STABILIZATION:
@@ -626,7 +644,8 @@ class Quadrotor(BaseAviary):
                 dist = np.sum(self.rew_state_weight * state_error * state_error)
                 dist += np.sum(self.rew_act_weight * act * act)
             if self.TASK == Task.TRAJ_TRACKING:
-                wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
+                wp_idx = (self.ctrl_step_counter + self.start_index) % (self.X_GOAL.shape[0])
+                # wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
                 state_error = state - self.X_GOAL[wp_idx]
                 dist = np.sum(self.rew_state_weight * self.rew_state_scale * state_error * state_error)
                 dist += np.sum(self.rew_act_weight * act * act)
@@ -708,7 +727,8 @@ class Quadrotor(BaseAviary):
         elif self.TASK == Task.TRAJ_TRACKING:
             # TODO: should use angle wrapping  
             # state[4] = normalize_angle(state[4])
-            wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
+            wp_idx = (self.ctrl_step_counter + self.start_index) % (self.X_GOAL.shape[0])
+            # wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
             state_error = state - self.X_GOAL[wp_idx]
         # filter only relevant dimensions 
         lacation_error = state_error * self.info_mse_metric_state_weight
