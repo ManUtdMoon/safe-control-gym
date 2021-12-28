@@ -27,8 +27,8 @@ quadrotor_config:
       high: 1
     init_z:
       distrib: "uniform"
-      low: -1
-      high: 1.5
+      low: -0.5
+      high: 0.5
     init_z_dot:
       distrib: "uniform"
       low: -1
