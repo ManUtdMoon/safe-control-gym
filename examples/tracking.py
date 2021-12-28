@@ -92,6 +92,7 @@ def main():
                                                )
             action = ctrl.KF * action**2
             action = np.array([action[0]+action[3], action[1]+action[2]])
+            action = PIDcontrol2normalized(action, env)
             rew_list.append(reward)
             ref_list.append((initial_info['x_reference'][(i+env.start_index) % (env.X_GOAL.shape[0]), 0],
                              initial_info['x_reference'][(i+env.start_index) % (env.X_GOAL.shape[0]), 2],))
@@ -307,6 +308,9 @@ class DSLPIDControl():
         pwm = np.clip(pwm, self.MIN_PWM, self.MAX_PWM)
         return self.PWM2RPM_SCALE * pwm + self.PWM2RPM_CONST
 
+def PIDcontrol2normalized(pid_ctrl, env):
+    hover_thrust = env.hover_thrust
+    return (pid_ctrl / hover_thrust - 1) / env.norm_act_scale
 
 if __name__ == "__main__":
     main()

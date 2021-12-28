@@ -103,7 +103,7 @@ class Quadrotor(BaseAviary):
                  inertial_prop=None,
                  # custom args
                  quad_type: QuadType = QuadType.TWO_D,
-                 norm_act_scale=0.1,
+                 norm_act_scale=1.0,
                  obs_goal_horizon=1,
                  rew_state_weight=1.0,
                  rew_state_scale=[10,10,1,1,0.2,0.2],
