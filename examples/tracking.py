@@ -29,8 +29,13 @@ def main():
     CONFIG_FACTORY = ConfigFactory()               
     config = CONFIG_FACTORY.merge()
     # Set iterations and episode counter.
-    num_episodes = 1
+    num_episodes = 4
     ITERATIONS = int(config.quadrotor_config['episode_len_sec']*config.quadrotor_config['ctrl_freq'])
+
+    STARTING_LOC = [(1., 1.), (-1., 1.), (0., 0.53), (0., 1.47)]
+    assert num_episodes % len(STARTING_LOC) == 0, \
+        print('num_epi:', num_episodes, 'len(starting loc):', len(STARTING_LOC))
+
     for i in range(num_episodes):
         # Start a timer.
         START = time.time()
@@ -38,6 +43,13 @@ def main():
         #     config.quadrotor_config['task_info']['trajectory_type'] = 'circle'
         # elif i == 2:
         #     config.quadrotor_config['task_info']['trajectory_type'] = 'square'
+
+        #############################
+        # Start from different location
+        config.quadrotor_config['init_state']['init_x'] = STARTING_LOC[i][0]
+        config.quadrotor_config['init_state']['init_z'] = STARTING_LOC[i][1]
+        #############################
+
         env = make('quadrotor', **config.quadrotor_config)
         # Create controller.
         action = np.zeros(2)
@@ -105,7 +117,7 @@ def main():
 
             # env.render()
             if done:
-                _, _ = env.reset()
+                break
         # Close the environment and print timing statistics.
         env.close()
         for key in info_dict_of_list.keys():
