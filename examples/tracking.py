@@ -36,7 +36,7 @@ def main():
     assert num_episodes % len(STARTING_LOC) == 0, \
         print('num_epi:', num_episodes, 'len(starting loc):', len(STARTING_LOC))
 
-    for i in range(num_episodes):
+    for i in range(0, num_episodes):
         # Start a timer.
         START = time.time()
         # if i == 1:
@@ -72,7 +72,7 @@ def main():
                         )
 
         info_dict_of_list = {}
-        print(initial_obs[0], initial_obs[2])
+        # print(initial_obs[0], initial_obs[2])
 
         # Run the experiment.
         for i in range(ITERATIONS):
@@ -122,8 +122,10 @@ def main():
         env.close()
         for key in info_dict_of_list.keys():
             tmp_list = info_dict_of_list[key]
-            print('avg_' + key, sum(tmp_list)/len(tmp_list), '\n')
+            if (not isinstance(tmp_list[0], list)) and (not isinstance(tmp_list[0], np.ndarray)):
+                print('avg_' + key, sum(tmp_list)/len(tmp_list), '\n')
         print('return', sum(rew_list))
+        print(info['sis_trans'].shape)
         elapsed_sec = time.time() - START
         print("\n{:d} iterations (@{:d}Hz) and {:d} episodes in {:.2f} seconds, i.e. {:.2f} steps/sec for a {:.2f}x speedup.\n"
               .format(ITERATIONS, env.CTRL_FREQ, num_episodes, elapsed_sec, ITERATIONS/elapsed_sec, (ITERATIONS*env.CTRL_TIMESTEP)/elapsed_sec))

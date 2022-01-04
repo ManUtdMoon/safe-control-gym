@@ -249,6 +249,13 @@ class Quadrotor(BaseAviary):
                 goal_position = np.vstack([POS_REF[:, 0], POS_REF[:, 2]]).transpose()
                 self.GOAL_TREE = scipy.spatial.cKDTree(goal_position)
 
+        self.set_sis_paras(sigma=0.04, k=1, n=2)
+        self.sis_info = {}
+
+    def set_sis_paras(self, sigma, k, n):
+        self.sis_para_k = k
+        self.sis_para_sigma = sigma
+        self.sis_para_n = n
 
     def reset(self):
         """(Re-)initializes the environment to start an episode.
@@ -320,6 +327,21 @@ class Quadrotor(BaseAviary):
         obs, info = self._get_observation(), self._get_reset_info()
         obs, info = super().after_reset(obs, info)
 
+        ######################################################
+        # info for energy-based method
+        # Note: sis_trans: tuple of list of tuples; sis_data: list of tuple
+        assert len(info['constraint_values']) == 2
+        dist2ub = info['constraint_values'][1]  # z - 1.5
+        dist2lb = info['constraint_values'][0]  # 0.5 - z
+        assert dist2ub == obs[2] - 1.5 and dist2lb == 0.5 - obs[2], print(dist2ub, obs[2] - 1.5, dist2lb, 0.5 - obs[2])
+        dot_dist2ub = obs[3]  # dot_z
+        dot_dist2lb = -obs[3]  # -dot_z
+        self.sis_info.update({
+            'sis_data': np.array([(dist2ub, dot_dist2ub), (dist2lb, dot_dist2lb)], dtype=np.float32)
+        })
+        info.update(self.sis_info)
+        ######################################################
+
         # Return either an observation and dictionary or just the observation.
         if self.INFO_IN_RESET:
             return obs, info
@@ -381,8 +403,29 @@ class Quadrotor(BaseAviary):
         done = self._get_done()
         info = self._get_info()
         obs, rew, done, info = super().after_step(obs, rew, done, info)
+        self._update_sis_info(obs, info)
+        info.update(self.sis_info)
         return obs, rew, done, info
-    
+
+    ####################################################
+    # method for update energy infomartion
+    def _update_sis_info(self, obs, info):
+        assert len(info['constraint_values']) == 2
+        dist2ub = info['constraint_values'][1]  # z - 1.5
+        dist2lb = info['constraint_values'][0]  # 0.5 - z
+
+        assert dist2ub == obs[2] - 1.5 and dist2lb == 0.5 - obs[2]
+        dot_dist2ub = obs[3]  # dot_z
+        dot_dist2lb = -obs[3]  # -dot_z
+        sis_info_tp1 = [(dist2ub, dot_dist2ub), (dist2lb, dot_dist2lb)]
+        sis_info_t = self.sis_info.get('sis_data', [])
+        assert sis_info_t.shape == np.array(sis_info_tp1).shape
+        self.sis_info.update(dict(
+            sis_data=np.array(sis_info_tp1, dtype=np.float32),
+            sis_trans=np.array((sis_info_t, sis_info_tp1), dtype=np.float32)
+        ))
+    ####################################################
+
     def render(self, mode='human'):
         """Retrieves a frame from PyBullet rendering.
 
