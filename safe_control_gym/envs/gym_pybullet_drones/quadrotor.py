@@ -106,7 +106,7 @@ class Quadrotor(BaseAviary):
                  norm_act_scale=1.0,
                  obs_goal_horizon=1,
                  rew_state_weight=1.0,
-                 rew_state_scale=[10,10,1,1,0.2,0.2],
+                 rew_state_scale=[10,1,10,1,0.2,0.2],
                  rew_act_weight=0.0001,
                  rew_exponential=True,
                  done_on_out_of_bound=True,
