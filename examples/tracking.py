@@ -63,6 +63,19 @@ def main():
                                lineColorRGB=[1, 0, 0],
                                # lifeTime=2 * env._CTRL_TIMESTEP,
                                physicsClientId=env.PYB_CLIENT)
+        # add constraint line
+        p.addUserDebugLine(
+            lineFromXYZ=[-10, 0, 0.5],
+            lineToXYZ=[10, 0, 0.5],
+            lineColorRGB=[0, 0, 0],
+            # lifeTime=2 * env._CTRL_TIMESTEP,
+            physicsClientId=env.PYB_CLIENT)
+        p.addUserDebugLine(
+            lineFromXYZ=[-10, 0, 1.5],
+            lineToXYZ=[10, 0, 1.5],
+            lineColorRGB=[0, 0, 0],
+            # lifeTime=2 * env._CTRL_TIMESTEP,
+            physicsClientId=env.PYB_CLIENT)
         position_list = []
         rew_list = []
         ref_list = []
@@ -115,7 +128,7 @@ def main():
                 for key in info_dict_of_list.keys():
                     info_dict_of_list[key].append(info[key])        
 
-            # env.render()
+            env.render()
             if done:
                 break
         # Close the environment and print timing statistics.
