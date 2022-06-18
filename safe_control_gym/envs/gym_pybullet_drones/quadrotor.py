@@ -106,7 +106,7 @@ class Quadrotor(BaseAviary):
                  norm_act_scale=1.0,
                  obs_goal_horizon=1,
                  rew_state_weight=1.0,
-                 rew_state_scale=[10,1,10,1,0.2,0.2],
+                 rew_state_scale=[1, 0.1, 1, 0.1, 0.02, 0.02],
                  rew_act_weight=0.0001,
                  rew_exponential=True,
                  done_on_out_of_bound=True,
@@ -551,8 +551,8 @@ class Quadrotor(BaseAviary):
             gym.spaces: The bounded observation (state) space, of size 2 or 6 depending on QUAD_TYPE.
 
         """
-        self.x_threshold = 2
-        self.z_threshold = 3
+        self.x_threshold = 10
+        self.z_threshold = 10
         self.theta_threshold_radians = 85 * math.pi / 180
         # Define obs/state bounds, labels and units.
         if self.QUAD_TYPE == QuadType.ONE_D:
@@ -690,7 +690,7 @@ class Quadrotor(BaseAviary):
                 wp_idx = (self.ctrl_step_counter + self.start_index) % (self.X_GOAL.shape[0])
                 # wp_idx = min(self.ctrl_step_counter, self.X_GOAL.shape[0]-1)
                 state_error = state - self.X_GOAL[wp_idx]
-                dist = np.sum(self.rew_state_weight * self.rew_state_scale * state_error * state_error)
+                dist = np.sum(self.rew_state_weight * self.rew_state_scale * np.abs(state_error))
                 dist += np.sum(self.rew_act_weight * act * act)
             rew = -dist
             # convert rew to be positive and bounded [0,1]

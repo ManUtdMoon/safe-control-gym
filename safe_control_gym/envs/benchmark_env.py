@@ -409,9 +409,9 @@ class BenchmarkEnv(gym.Env):
 
         # Terminate when reaching time limit,
         # but distinguish between done due to true termination or time limit reached 
-        if self.ctrl_step_counter >= self.CTRL_STEPS:
-            info["TimeLimit.truncated"] = not done
-            done = True 
+        # if self.ctrl_step_counter >= self.CTRL_STEPS:
+        #     info["TimeLimit.truncated"] = not done
+        #     done = True 
         return obs, rew, done, info
 
     def _generate_trajectory(self,

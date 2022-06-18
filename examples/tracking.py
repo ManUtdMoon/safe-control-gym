@@ -29,10 +29,10 @@ def main():
     CONFIG_FACTORY = ConfigFactory()               
     config = CONFIG_FACTORY.merge()
     # Set iterations and episode counter.
-    num_episodes = 4
+    num_episodes = 1
     ITERATIONS = int(config.quadrotor_config['episode_len_sec']*config.quadrotor_config['ctrl_freq'])
 
-    STARTING_LOC = [(1., 1.), (-1., 1.), (0., 0.53), (0., 1.47)]
+    STARTING_LOC = [(1., 1.)]#, (-1., 1.), (0., 0.53), (0., 1.47)]
     assert num_episodes % len(STARTING_LOC) == 0, \
         print('num_epi:', num_episodes, 'len(starting loc):', len(STARTING_LOC))
 
@@ -92,9 +92,9 @@ def main():
             # Step the environment and print all returned information.
             obs, reward, done, info = env.step(action)
             # Print the last action and the information returned at each step.
-            print(i, '-th step.')
+            # print(i, '-th step.')
             position_list.append((obs[0], obs[2]))
-            print(action, '\n', obs, '\n', reward, '\n', done, '\n', info, '\n')
+            # print(action, '\n', obs, '\n', reward, '\n', done, '\n', info, '\n')
             # Compute the next action.
             action, _, _ = ctrl.computeControl(control_timestep=env.CTRL_TIMESTEP,
                                                cur_pos=np.array([obs[0], 0, obs[2]]),
@@ -128,7 +128,7 @@ def main():
                 for key in info_dict_of_list.keys():
                     info_dict_of_list[key].append(info[key])        
 
-            env.render()
+            # env.render()
             if done:
                 break
         # Close the environment and print timing statistics.
@@ -138,7 +138,7 @@ def main():
             if (not isinstance(tmp_list[0], list)) and (not isinstance(tmp_list[0], np.ndarray)):
                 print('avg_' + key, sum(tmp_list)/len(tmp_list), '\n')
         print('return', sum(rew_list))
-        print(info['sis_trans'].shape)
+        # print(info['sis_trans'].shape)
         elapsed_sec = time.time() - START
         print("\n{:d} iterations (@{:d}Hz) and {:d} episodes in {:.2f} seconds, i.e. {:.2f} steps/sec for a {:.2f}x speedup.\n"
               .format(ITERATIONS, env.CTRL_FREQ, num_episodes, elapsed_sec, ITERATIONS/elapsed_sec, (ITERATIONS*env.CTRL_TIMESTEP)/elapsed_sec))
