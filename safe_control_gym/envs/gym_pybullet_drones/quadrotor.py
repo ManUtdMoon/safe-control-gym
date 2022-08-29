@@ -551,8 +551,8 @@ class Quadrotor(BaseAviary):
             gym.spaces: The bounded observation (state) space, of size 2 or 6 depending on QUAD_TYPE.
 
         """
-        self.x_threshold = 10
-        self.z_threshold = 10
+        self.x_threshold = 5.
+        self.z_threshold = 5.
         self.theta_threshold_radians = 85 * math.pi / 180
         # Define obs/state bounds, labels and units.
         if self.QUAD_TYPE == QuadType.ONE_D:
